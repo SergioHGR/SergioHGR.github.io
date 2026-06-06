@@ -1,1 +1,847 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Autoevaluación de Bienestar Emocional - Herramienta de autoconocimiento para evaluar estrés, ansiedad y depresión">
+  <title>Autoevaluación de Bienestar Emocional</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <style>
+    :root {
+      --color-estres: #e67e22;
+      --color-ansiedad: #3498db;
+      --color-depresion: #9b59b6;
+      --color-progreso-0: #95a5a6;
+      --color-progreso-50: #3498db;
+      --color-progreso-100: #27ae60;
+      --color-alerta: #e74c3c;
+      --color-logro: #27ae60;
+    }
 
+    a.skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      z-index: 999;
+      padding: 0.5rem 1rem;
+      background: var(--pico-primary);
+      color: white;
+    }
+    a.skip-link:focus {
+      left: 0;
+    }
+
+    .progress-bar-container {
+      position: sticky;
+      top: 0;
+      background: var(--pico-background-color);
+      padding: 0.75rem 0;
+      z-index: 100;
+      border-bottom: 1px solid var(--pico-muted-border-color);
+    }
+    .progress-bar-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .progress-bar {
+      flex: 1;
+      height: 0.75rem;
+      background: var(--color-progreso-0);
+      border-radius: 0.375rem;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--color-progreso-0), var(--color-progreso-50), var(--color-progreso-100));
+      background-size: 200% 100%;
+      transition: width 0.3s ease;
+      border-radius: 0.375rem;
+    }
+    .progress-text {
+      font-weight: 600;
+      white-space: nowrap;
+      min-width: 8rem;
+    }
+
+    .seccion-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .seccion-check {
+      opacity: 0;
+      color: var(--color-logro);
+      font-size: 1.25rem;
+      transition: opacity 0.3s ease;
+    }
+    .seccion-check.visible {
+      opacity: 1;
+    }
+    .seccion-contador {
+      font-size: 0.875rem;
+      color: var(--pico-muted-color);
+      margin-left: auto;
+    }
+
+    details.seccion {
+      margin-bottom: 1.5rem;
+      border-left: 4px solid var(--pico-muted-border-color);
+      padding-left: 1rem;
+    }
+    details.seccion-estres { border-left-color: var(--color-estres); }
+    details.seccion-ansiedad { border-left-color: var(--color-ansiedad); }
+    details.seccion-depresion { border-left-color: var(--color-depresion); }
+
+    details.seccion > summary {
+      font-size: 1.25rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0.75rem 0;
+    }
+    details.seccion-estres > summary { color: var(--color-estres); }
+    details.seccion-ansiedad > summary { color: var(--color-ansiedad); }
+    details.seccion-depresion > summary { color: var(--color-depresion); }
+
+    fieldset {
+      border: none;
+      padding: 0;
+      margin: 0 0 1.5rem 0;
+    }
+    fieldset legend {
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+      font-size: 1rem;
+    }
+    .opciones-radio {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.5rem;
+    }
+    .opciones-radio label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-size: 0.9375rem;
+    }
+
+    .resultados-seccion {
+      background: var(--pico-card-background-color);
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+    }
+    .resultado-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--pico-muted-border-color);
+    }
+    .resultado-item:last-child {
+      border-bottom: none;
+    }
+    .resultado-puntuacion {
+      font-size: 1.125rem;
+    }
+    .resultado-puntuacion strong {
+      font-weight: 700;
+    }
+    .resultado-puntuacion span {
+      font-weight: 400;
+      color: var(--pico-muted-color);
+    }
+    .resultado-alerta {
+      color: var(--color-alerta);
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+
+    .interpretacion {
+      background: var(--pico-card-background-color);
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      margin: 2rem 0;
+    }
+    .interpretacion h3 {
+      margin-top: 0;
+    }
+    .interpretacion ul {
+      margin-bottom: 0;
+    }
+
+    .reflexion textarea {
+      min-height: 6rem;
+      resize: vertical;
+    }
+
+    .escala-compacta {
+      font-size: 0.9375rem;
+      color: var(--pico-muted-color);
+      margin-bottom: 1.5rem;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: linear-gradient(135deg, var(--color-logro), #2ecc71);
+      color: white;
+      padding: 1.25rem 2.5rem;
+      border-radius: 1rem;
+      font-weight: 700;
+      font-size: 1.125rem;
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      z-index: 1000;
+      pointer-events: none;
+      box-shadow: 0 8px 32px rgba(39, 174, 96, 0.4);
+      text-align: center;
+      max-width: 90vw;
+    }
+    .toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    @media (min-width: 768px) {
+      .toast {
+        padding: 1.5rem 3rem;
+        font-size: 1.25rem;
+        border-radius: 1.25rem;
+      }
+    }
+
+    .logro-header {
+      background: var(--color-logro) !important;
+      color: white;
+    }
+    .logro-header .progress-text {
+      color: white;
+    }
+
+    .btn-resultados {
+      width: 100%;
+      margin-top: 1rem;
+    }
+    .btn-resultados.pulse {
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    .seccion-check.animate {
+      animation: pop 0.3s ease;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); box-shadow: 0 0 20px rgba(39, 174, 96, 0.4); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .progress-bar-fill,
+      .seccion-check,
+      .toast,
+      .btn-resultados.pulse {
+        transition: none;
+        animation: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .opciones-radio {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .progress-bar-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+      }
+      .progress-text {
+        text-align: center;
+      }
+    }
+
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--pico-muted-border-color);
+    }
+    .disclaimer {
+      font-size: 0.875rem;
+      color: var(--pico-muted-color);
+      font-style: italic;
+    }
+
+    @media print {
+      .progress-bar-container,
+      .btn-resultados,
+      .toast,
+      .skip-link { display: none; }
+      details { display: block; }
+      details > summary { display: none; }
+      details[open] > summary { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Saltar al contenido principal</a>
+
+  <main id="main" class="container">
+    <header>
+      <h1>Autoevaluación de Bienestar Emocional</h1>
+    </header>
+
+    <div class="progress-bar-container" role="status" aria-live="polite">
+      <div class="progress-bar-wrapper">
+        <span class="progress-text" id="progress-text">0 de 18 preguntas</span>
+        <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="18">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <section aria-label="Datos personales">
+      <div class="grid">
+        <label>
+          Nombre (Opcional)
+          <input type="text" id="nombre" placeholder="Tu nombre">
+        </label>
+        <label>
+          Fecha
+          <input type="date" id="fecha">
+        </label>
+      </div>
+    </section>
+
+    <section class="instrucciones">
+      <h2>Instrucciones</h2>
+      <p>Lee cada afirmación y marca la opción que mejor describa cómo te has sentido durante las <strong>últimas dos semanas</strong>.</p>
+      <p class="escala-compacta"><strong>Nunca</strong> (0) · <strong>Algunas veces</strong> (1) · <strong>Frecuentemente</strong> (2) · <strong>Casi siempre</strong> (3)</p>
+    </section>
+
+    <form id="formulario-bienestar">
+      <!-- SECCIÓN A: ESTRÉS -->
+      <details class="seccion seccion-estres" open>
+        <summary>
+          <span class="seccion-header">
+            <span>Sección A: Estrés</span>
+            <span class="seccion-check" id="check-estres" aria-hidden="true">✓</span>
+            <span class="seccion-contador" id="contador-estres">0 de 6</span>
+          </span>
+        </summary>
+
+        <fieldset>
+          <legend>1. Me siento sobrecargado(a) por mis responsabilidades.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="estres-1" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="estres-1" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="estres-1" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="estres-1" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>2. Tengo dificultades para desconectarme de mis preocupaciones laborales o personales.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="estres-2" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="estres-2" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="estres-2" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="estres-2" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>3. Siento tensión muscular o dolores físicos relacionados con preocupaciones.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="estres-3" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="estres-3" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="estres-3" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="estres-3" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>4. Me irrito con facilidad.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="estres-4" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="estres-4" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="estres-4" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="estres-4" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>5. Tengo la sensación de que no me alcanza el tiempo.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="estres-5" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="estres-5" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="estres-5" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="estres-5" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>6. Me siento agotado(a) al finalizar el día.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="estres-6" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="estres-6" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="estres-6" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="estres-6" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+      </details>
+
+      <!-- SECCIÓN B: ANSIEDAD -->
+      <details class="seccion seccion-ansiedad">
+        <summary>
+          <span class="seccion-header">
+            <span>Sección B: Ansiedad</span>
+            <span class="seccion-check" id="check-ansiedad" aria-hidden="true">✓</span>
+            <span class="seccion-contador" id="contador-ansiedad">0 de 6</span>
+          </span>
+        </summary>
+
+        <fieldset>
+          <legend>1. Me preocupo excesivamente por situaciones futuras.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="ansiedad-1" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="ansiedad-1" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="ansiedad-1" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="ansiedad-1" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>2. Pienso constantemente en cosas que podrían salir mal.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="ansiedad-2" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="ansiedad-2" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="ansiedad-2" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="ansiedad-2" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>3. Me cuesta controlar mis preocupaciones.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="ansiedad-3" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="ansiedad-3" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="ansiedad-3" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="ansiedad-3" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>4. Siento nerviosismo o inquietud sin razón clara.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="ansiedad-4" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="ansiedad-4" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="ansiedad-4" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="ansiedad-4" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>5. Presento palpitaciones, sensación de ahogo o tensión cuando me preocupo.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="ansiedad-5" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="ansiedad-5" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="ansiedad-5" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="ansiedad-5" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>6. Tengo dificultad para relajarme.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="ansiedad-6" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="ansiedad-6" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="ansiedad-6" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="ansiedad-6" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+      </details>
+
+      <!-- SECCIÓN C: DEPRESIÓN -->
+      <details class="seccion seccion-depresion">
+        <summary>
+          <span class="seccion-header">
+            <span>Sección C: Depresión</span>
+            <span class="seccion-check" id="check-depresion" aria-hidden="true">✓</span>
+            <span class="seccion-contador" id="contador-depresion">0 de 6</span>
+          </span>
+        </summary>
+
+        <fieldset>
+          <legend>1. Me siento triste o desanimado(a) gran parte del tiempo.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="depresion-1" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="depresion-1" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="depresion-1" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="depresion-1" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>2. He perdido interés en actividades que antes disfrutaba.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="depresion-2" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="depresion-2" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="depresion-2" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="depresion-2" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>3. Me siento sin energía o motivación.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="depresion-3" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="depresion-3" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="depresion-3" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="depresion-3" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>4. Tengo sentimientos de inutilidad o culpa excesiva.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="depresion-4" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="depresion-4" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="depresion-4" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="depresion-4" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>5. He tenido cambios importantes en mi sueño o apetito.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="depresion-5" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="depresion-5" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="depresion-5" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="depresion-5" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>6. Me cuesta encontrar aspectos positivos sobre mi futuro.</legend>
+          <div class="opciones-radio">
+            <label><input type="radio" name="depresion-6" value="0"> Nunca (0)</label>
+            <label><input type="radio" name="depresion-6" value="1"> Algunas veces (1)</label>
+            <label><input type="radio" name="depresion-6" value="2"> Frecuentemente (2)</label>
+            <label><input type="radio" name="depresion-6" value="3"> Casi siempre (3)</label>
+          </div>
+        </fieldset>
+      </details>
+
+      <button type="button" class="btn-resultados" id="btn-calcular">📊 Calcular Resultados</button>
+    </form>
+
+    <!-- RESULTADOS -->
+    <section id="resultados" class="resultados-seccion" aria-live="polite" hidden>
+      <h2>Resultados</h2>
+      <div class="resultado-item">
+        <div>
+          <strong style="color: var(--color-estres);">Estrés</strong>
+          <div id="alerta-estres" class="resultado-alerta" hidden></div>
+        </div>
+        <span class="resultado-puntuacion" id="resultado-estres">0 / 18</span>
+      </div>
+      <div class="resultado-item">
+        <div>
+          <strong style="color: var(--color-ansiedad);">Ansiedad</strong>
+          <div id="alerta-ansiedad" class="resultado-alerta" hidden></div>
+        </div>
+        <span class="resultado-puntuacion" id="resultado-ansiedad">0 / 18</span>
+      </div>
+      <div class="resultado-item">
+        <div>
+          <strong style="color: var(--color-depresion);">Depresión</strong>
+          <div id="alerta-depresion" class="resultado-alerta" hidden></div>
+        </div>
+        <span class="resultado-puntuacion" id="resultado-depresion">0 / 18</span>
+      </div>
+    </section>
+
+    <!-- INTERPRETACIÓN -->
+    <section class="interpretacion">
+      <h3>Interpretación Orientativa</h3>
+      <ul>
+        <li>La puntuación más alta indica el área donde actualmente podrías estar experimentando mayores dificultades.</li>
+        <li>Si obtuviste <strong>10 puntos o más</strong> en alguna de las áreas, puede ser útil prestar atención a estos síntomas y considerar estrategias de autocuidado.</li>
+        <li>Si los síntomas son persistentes, generan malestar significativo o afectan tu funcionamiento diario, es recomendable consultar con un profesional de la salud mental.</li>
+      </ul>
+    </section>
+
+    <!-- PREGUNTAS DE REFLEXIÓN -->
+    <section class="reflexion">
+      <h2>Preguntas de Reflexión Final</h2>
+
+      <label>
+        1. ¿Qué situación está impactando más mi bienestar actualmente?
+        <textarea id="reflexion-1" placeholder="Escribe tu reflexión aquí..."></textarea>
+      </label>
+
+      <label>
+        2. ¿Qué acción concreta puedo realizar esta semana para cuidar mi salud mental?
+        <textarea id="reflexion-2" placeholder="Escribe tu reflexión aquí..."></textarea>
+      </label>
+
+      <label>
+        3. ¿Con quién puedo apoyarme si necesito ayuda?
+        <textarea id="reflexion-3" placeholder="Escribe tu reflexión aquí..."></textarea>
+      </label>
+    </section>
+
+    <button type="button" class="btn-resultados secondary" id="btn-imprimir" hidden>🖨️ Imprimir Resultados</button>
+
+    <footer>
+      <p class="disclaimer"><strong>Recuerda:</strong> Esta herramienta no constituye un diagnóstico clínico. Su objetivo es promover el autoconocimiento y la búsqueda oportuna de apoyo cuando sea necesario.</p>
+    </footer>
+  </main>
+
+  <!-- Toast para celebraciones -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      const secciones = ['estres', 'ansiedad', 'depresion'];
+      const preguntasPorSeccion = 6;
+      const totalPreguntas = secciones.length * preguntasPorSeccion;
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      let seccionesCompletadas = { estres: false, ansiedad: false, depresion: false };
+
+      function calcularPuntuacion(seccion) {
+        const radios = document.querySelectorAll(`input[name^="${seccion}-"]:checked`);
+        const respondidas = radios.length;
+        const puntuacion = Array.from(radios).reduce((sum, r) => sum + parseInt(r.value, 10), 0);
+        return { puntuacion, respondidas };
+      }
+
+      function actualizarContador(seccion) {
+        const { respondidas } = calcularPuntuacion(seccion);
+        const contador = document.getElementById(`contador-${seccion}`);
+        if (contador) {
+          contador.textContent = `${respondidas} de ${preguntasPorSeccion}`;
+        }
+        return respondidas;
+      }
+
+      function contarSeccionesCompletas() {
+        return Object.values(seccionesCompletadas).filter(Boolean).length;
+      }
+
+      function verificarSeccionCompleta(seccion) {
+        const respondidas = actualizarContador(seccion);
+        const check = document.getElementById(`check-${seccion}`);
+        const details = document.querySelector(`.seccion-${seccion}`);
+
+        if (respondidas === preguntasPorSeccion && !seccionesCompletadas[seccion]) {
+          seccionesCompletadas[seccion] = true;
+          if (check) {
+            check.classList.add('visible');
+            if (!prefersReducedMotion) {
+              check.classList.add('animate');
+              setTimeout(() => check.classList.remove('animate'), 300);
+            }
+          }
+          const completadas = contarSeccionesCompletas();
+          mostrarToast(`¡${completadas} de ${secciones.length} secciones completadas!`);
+
+          if (details) {
+            details.removeAttribute('open');
+          }
+          const indiceActual = secciones.indexOf(seccion);
+          for (let i = indiceActual + 1; i < secciones.length; i++) {
+            if (!seccionesCompletadas[secciones[i]]) {
+              const siguiente = document.querySelector(`.seccion-${secciones[i]}`);
+              if (siguiente) {
+                siguiente.setAttribute('open', '');
+                siguiente.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+              break;
+            }
+          }
+        } else if (respondidas < preguntasPorSeccion && seccionesCompletadas[seccion]) {
+          seccionesCompletadas[seccion] = false;
+          if (check) {
+            check.classList.remove('visible');
+          }
+        }
+      }
+
+      function actualizarProgreso() {
+        let totalRespondidas = 0;
+        secciones.forEach(seccion => {
+          const { respondidas } = calcularPuntuacion(seccion);
+          totalRespondidas += respondidas;
+        });
+
+        const porcentaje = (totalRespondidas / totalPreguntas) * 100;
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        const progressContainer = document.querySelector('.progress-bar-container');
+        const btnCalcular = document.getElementById('btn-calcular');
+        const btnImprimir = document.getElementById('btn-imprimir');
+
+        if (progressFill) {
+          progressFill.style.width = `${porcentaje}%`;
+          progressFill.style.backgroundPosition = `${100 - porcentaje}% 0`;
+        }
+        if (progressText) {
+          progressText.textContent = `${totalRespondidas} de ${totalPreguntas} preguntas`;
+        }
+
+        if (totalRespondidas === totalPreguntas) {
+          if (progressContainer && !progressContainer.classList.contains('logro-header')) {
+            progressContainer.classList.add('logro-header');
+            if (!prefersReducedMotion && btnCalcular) {
+              btnCalcular.classList.add('pulse');
+            }
+            mostrarToast('¡Evaluación completa! Revisa tus resultados.');
+          }
+          if (btnImprimir) {
+            btnImprimir.hidden = false;
+          }
+        } else {
+          if (progressContainer) {
+            progressContainer.classList.remove('logro-header');
+          }
+          if (btnCalcular) {
+            btnCalcular.classList.remove('pulse');
+          }
+          if (btnImprimir) {
+            btnImprimir.hidden = true;
+          }
+        }
+      }
+
+      function reproducirSonido() {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = 880;
+          osc.type = 'sine';
+          gain.gain.setValueAtTime(0.3, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+          osc.start(ctx.currentTime);
+          osc.stop(ctx.currentTime + 0.3);
+        } catch (e) {}
+      }
+
+      function mostrarToast(mensaje) {
+        const toast = document.getElementById('toast');
+        if (!toast) return;
+
+        toast.textContent = mensaje;
+        if (!prefersReducedMotion) {
+          toast.classList.add('visible');
+          reproducirSonido();
+        }
+
+        setTimeout(() => {
+          toast.classList.remove('visible');
+        }, 2500);
+      }
+
+      function actualizarResultados(scrollToResults = false) {
+        const resultadosSection = document.getElementById('resultados');
+        if (resultadosSection) {
+          resultadosSection.hidden = false;
+        }
+
+        secciones.forEach(seccion => {
+          const { puntuacion, respondidas } = calcularPuntuacion(seccion);
+          const resultadoEl = document.getElementById(`resultado-${seccion}`);
+          const alertaEl = document.getElementById(`alerta-${seccion}`);
+
+          if (resultadoEl) {
+            let html = `<strong>${puntuacion}</strong><span> / 18</span>`;
+            if (respondidas < preguntasPorSeccion) {
+              html += `<span> (${respondidas} de ${preguntasPorSeccion})</span>`;
+            }
+            resultadoEl.innerHTML = html;
+          }
+
+          if (alertaEl) {
+            if (puntuacion >= 10) {
+              alertaEl.textContent = 'Considera prestar atención a esta área y buscar estrategias de autocuidado.';
+              alertaEl.hidden = false;
+            } else {
+              alertaEl.hidden = true;
+            }
+          }
+        });
+
+        if (scrollToResults && resultadosSection) {
+          secciones.forEach(seccion => {
+            if (seccionesCompletadas[seccion]) {
+              const details = document.querySelector(`.seccion-${seccion}`);
+              if (details) {
+                details.removeAttribute('open');
+              }
+            }
+          });
+          resultadosSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+
+      function inicializar() {
+        const fechaInput = document.getElementById('fecha');
+        if (fechaInput) {
+          fechaInput.valueAsDate = new Date();
+        }
+
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+          radio.addEventListener('change', () => {
+            const seccion = radio.name.split('-')[0];
+            verificarSeccionCompleta(seccion);
+            actualizarProgreso();
+            actualizarResultados();
+          });
+        });
+
+        const btnCalcular = document.getElementById('btn-calcular');
+        if (btnCalcular) {
+          btnCalcular.addEventListener('click', () => actualizarResultados(true));
+        }
+
+        const btnImprimir = document.getElementById('btn-imprimir');
+        if (btnImprimir) {
+          btnImprimir.addEventListener('click', () => window.print());
+        }
+
+        window.addEventListener('beforeunload', (e) => {
+          const hayRespuestas = document.querySelectorAll('input[type="radio"]:checked').length > 0;
+          if (hayRespuestas) {
+            e.preventDefault();
+            e.returnValue = '';
+          }
+        });
+
+        secciones.forEach(seccion => actualizarContador(seccion));
+        actualizarProgreso();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', inicializar);
+      } else {
+        inicializar();
+      }
+    })();
+  </script>
+</body>
+</html>
